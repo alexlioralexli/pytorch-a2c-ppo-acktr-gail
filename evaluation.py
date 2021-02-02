@@ -1,9 +1,7 @@
-import numpy as np
 import torch
-
 from a2c_ppo_acktr import utils
 from a2c_ppo_acktr.envs import make_vec_envs
-from rlkit_logging import logger
+
 
 def evaluate(actor_critic, ob_rms, env_name, seed, num_processes, eval_log_dir,
              device):
@@ -46,6 +44,3 @@ def evaluate(actor_critic, ob_rms, env_name, seed, num_processes, eval_log_dir,
 
     # print(" Evaluation using {} episodes: mean reward {:.5f}\n".format(
     #     len(eval_episode_rewards), np.mean(eval_episode_rewards)))
-
-    logger.record_tabular('Eval reward', np.mean(eval_episode_rewards))
-    logger.dump_tabular(with_prefix=False, with_timestamp=True)

@@ -8,3 +8,4 @@ dependencies:
         - matplotlib
         - stable-baselines3
         - box2d-py
+        - h5py

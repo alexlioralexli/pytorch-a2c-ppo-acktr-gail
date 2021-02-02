@@ -115,20 +115,12 @@ def get_args():
     parser.add_argument(
         '--num-env-steps',
         type=int,
-        default=10e6,
+        default=1e6,
         help='number of environment steps to train (default: 10e6)')
     parser.add_argument(
         '--env-name',
         default='PongNoFrameskip-v4',
         help='environment to train on (default: PongNoFrameskip-v4)')
-    parser.add_argument(
-        '--log-dir',
-        default='/tmp/gym/',
-        help='directory to save agent logs (default: /tmp/gym)')
-    parser.add_argument(
-        '--save-dir',
-        default='./trained_models/',
-        help='directory to save agent logs (default: ./trained_models/)')
     parser.add_argument(
         '--no-cuda',
         action='store_true',
@@ -152,7 +144,7 @@ def get_args():
 
     # added
     parser.add_argument("--network_class", default="MLP", choices=['MLP', 'FourierMLP'])
-    parser.add_argument("--n_hidden", default=3, type=int)
+    parser.add_argument("--n_hidden", default=1, type=int)
     parser.add_argument("--hidden_dim", default=256, type=int)
     parser.add_argument("--first_dim", default=0, type=int)
     parser.add_argument("--fourier_dim", default=256, type=int)

@@ -208,8 +208,11 @@ class MLPBase(NNBase):
         if recurrent:
             num_inputs = hidden_size
 
-        init_ = lambda m: init(m, nn.init.orthogonal_, lambda x: nn.init.
-                               constant_(x, 0), np.sqrt(2))
+
+        def init_(m):
+            if isinstance(m, nn.Linear):
+                return init(m, nn.init.orthogonal_, lambda x: nn.init.
+                     constant_(x, 0), np.sqrt(2))
 
         # self.actor = nn.Sequential(
         #     init_(nn.Linear(num_inputs, hidden_size)), nn.Tanh(),

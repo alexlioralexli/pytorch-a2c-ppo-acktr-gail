@@ -45,16 +45,10 @@ def main():
         torch.backends.cudnn.benchmark = False
         torch.backends.cudnn.deterministic = True
 
-    log_dir = os.path.expanduser(args.log_dir)
-    eval_log_dir = log_dir + "_eval"
-    utils.cleanup_log_dir(log_dir)
-    utils.cleanup_log_dir(eval_log_dir)
-
     torch.set_num_threads(1)
     device = torch.device("cuda:0" if args.cuda else "cpu")
 
-    envs = make_vec_envs(args.env_name, args.seed, args.num_processes,
-                         args.gamma, args.log_dir, device, False)
+    envs = make_vec_envs(args.env_name, args.seed, args.num_processes, args.gamma, log_dir, device, False)
 
     if args.network_class == 'MLP':
         base_kwargs = dict(n_hidden=args.n_hidden,
@@ -195,36 +189,30 @@ def main():
         rollouts.after_update()
 
         # save for every interval-th episode or for the last epoch
-        if (j % args.save_interval == 0
-            or j == num_updates - 1) and args.save_dir != "":
-            save_path = os.path.join(args.save_dir, args.algo)
-            try:
-                os.makedirs(save_path)
-            except OSError:
-                pass
-
-            torch.save([
-                actor_critic,
-                getattr(utils.get_vec_normalize(envs), 'ob_rms', None)
-            ], os.path.join(save_path, args.env_name + ".pt"))
+        if j % args.save_interval == 0 or j == num_updates - 1:
+            torch.save(actor_critic.state_dict(), osp.join(log_dir, f'{j}.pt'))
 
         if j % args.log_interval == 0 and len(episode_rewards) > 1:
             total_num_steps = (j + 1) * args.num_processes * args.num_steps
             end = time.time()
-            print(
-                "Updates {}, num timesteps {}, FPS {} \n Last {} training episodes: mean/median reward {:.1f}/{:.1f}, min/max reward {:.1f}/{:.1f}\n"
-                    .format(j, total_num_steps,
-                            int(total_num_steps / (end - start)),
-                            len(episode_rewards), np.mean(episode_rewards),
-                            np.median(episode_rewards), np.min(episode_rewards),
-                            np.max(episode_rewards), dist_entropy, value_loss,
-                            action_loss))
+            # print(
+            #     "Updates {}, num timesteps {}, FPS {} \n Last {} training episodes: mean/median reward {:.1f}/{:.1f}, min/max reward {:.1f}/{:.1f}\n"
+            #         .format(j, total_num_steps,
+            #                 int(total_num_steps / (end - start)),
+            #                 len(episode_rewards), np.mean(episode_rewards),
+            #                 np.median(episode_rewards), np.min(episode_rewards),
+            #                 np.max(episode_rewards), dist_entropy, value_loss,
+            #                 action_loss))
+            logger.record_tabular('Steps', total_num_steps)
+            logger.record_tabular('Time', end - start)
+            logger.record_tabular('Train reward', np.mean(episode_rewards))
+            logger.dump_tabular(with_prefix=False, with_timestamp=True)
 
-        if (args.eval_interval is not None and len(episode_rewards) > 1
-                and j % args.eval_interval == 0):
+        if (args.eval_interval is not None and len(episode_rewards) > 1 and j % args.eval_interval == 0):
+            raise RuntimeError  # not sure where this is being logger. regardless, vec_normalize isn't working
             ob_rms = utils.get_vec_normalize(envs).ob_rms
             evaluate(actor_critic, ob_rms, args.env_name, args.seed,
-                     args.num_processes, eval_log_dir, device)
+                     args.num_processes, log_dir, device)
 
 
 if __name__ == "__main__":
