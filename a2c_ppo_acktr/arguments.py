@@ -149,6 +149,18 @@ def get_args():
         action='store_true',
         default=False,
         help='use a linear schedule on the learning rate')
+
+    # added
+    parser.add_argument("--network_class", default="MLP", choices=['MLP', 'FourierMLP'])
+    parser.add_argument("--n_hidden", default=3, type=int)
+    parser.add_argument("--hidden_dim", default=256, type=int)
+    parser.add_argument("--first_dim", default=0, type=int)
+    parser.add_argument("--fourier_dim", default=256, type=int)
+    parser.add_argument("--sigma", default=1.0, type=float)
+    parser.add_argument("--concatenate_fourier", action='store_true')
+    parser.add_argument("--train_B", action='store_true')
+    parser.add_argument("--test", '-t', action='store_true')
+
     args = parser.parse_args()
 
     args.cuda = not args.no_cuda and torch.cuda.is_available()

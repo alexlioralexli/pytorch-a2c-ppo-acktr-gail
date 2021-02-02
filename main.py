@@ -19,9 +19,24 @@ from a2c_ppo_acktr.model import Policy
 from a2c_ppo_acktr.storage import RolloutStorage
 from evaluation import evaluate
 
+# added
+import os.path as osp
+from rlkit_logging import logger
+from logging_utils import create_env_folder, save_kwargs
+
 
 def main():
     args = get_args()
+
+    # added
+    log_dir = create_env_folder(args.env_name, args.network_class, test=args.test)
+    save_kwargs(vars(args), log_dir)
+    tabular_log_path = osp.join(log_dir, 'progress.csv')
+    text_log_path = osp.join(log_dir, 'debug.log')
+    logger.add_text_output(text_log_path)
+    logger.add_tabular_output(tabular_log_path)
+    exp_name = f'{args.env_name}'
+    logger.push_prefix("[%s] " % exp_name)
 
     torch.manual_seed(args.seed)
     torch.cuda.manual_seed_all(args.seed)
@@ -41,10 +56,28 @@ def main():
     envs = make_vec_envs(args.env_name, args.seed, args.num_processes,
                          args.gamma, args.log_dir, device, False)
 
+    if args.network_class == 'MLP':
+        base_kwargs = dict(n_hidden=args.n_hidden,
+                           hidden_dim=args.hidden_dim,
+                           first_dim=args.first_dim,
+                           add_relu=True)
+    elif args.network_class == 'FourierMLP':
+        base_kwargs = dict(n_hidden=args.n_hidden,
+                           hidden_dim=args.hidden_dim,
+                           sigma=args.sigma,
+                           fourier_dim=args.fourier_dim,
+                           train_B=args.train_B,
+                           concatenate_fourier=args.concatenate_fourier,
+                           add_relu=True)
+    else:
+        raise NotImplementedError
+    base_kwargs['network_class'] = args.network_class
+    base_kwargs['recurrent'] = args.recurrent_policy
+
     actor_critic = Policy(
         envs.observation_space.shape,
         envs.action_space,
-        base_kwargs={'recurrent': args.recurrent_policy})
+        base_kwargs=base_kwargs)
     actor_critic.to(device)
 
     if args.algo == 'a2c':
@@ -79,7 +112,7 @@ def main():
         file_name = os.path.join(
             args.gail_experts_dir, "trajs_{}.pt".format(
                 args.env_name.split('-')[0].lower()))
-        
+
         expert_dataset = gail.ExpertDataset(
             file_name, num_trajectories=4, subsample_frequency=20)
         drop_last = len(expert_dataset) > args.gail_batch_size
@@ -163,7 +196,7 @@ def main():
 
         # save for every interval-th episode or for the last epoch
         if (j % args.save_interval == 0
-                or j == num_updates - 1) and args.save_dir != "":
+            or j == num_updates - 1) and args.save_dir != "":
             save_path = os.path.join(args.save_dir, args.algo)
             try:
                 os.makedirs(save_path)
@@ -180,12 +213,12 @@ def main():
             end = time.time()
             print(
                 "Updates {}, num timesteps {}, FPS {} \n Last {} training episodes: mean/median reward {:.1f}/{:.1f}, min/max reward {:.1f}/{:.1f}\n"
-                .format(j, total_num_steps,
-                        int(total_num_steps / (end - start)),
-                        len(episode_rewards), np.mean(episode_rewards),
-                        np.median(episode_rewards), np.min(episode_rewards),
-                        np.max(episode_rewards), dist_entropy, value_loss,
-                        action_loss))
+                    .format(j, total_num_steps,
+                            int(total_num_steps / (end - start)),
+                            len(episode_rewards), np.mean(episode_rewards),
+                            np.median(episode_rewards), np.min(episode_rewards),
+                            np.max(episode_rewards), dist_entropy, value_loss,
+                            action_loss))
 
         if (args.eval_interval is not None and len(episode_rewards) > 1
                 and j % args.eval_interval == 0):

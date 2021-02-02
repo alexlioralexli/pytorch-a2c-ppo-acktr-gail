@@ -2,6 +2,7 @@ import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+from mlp import MLP, FourierMLP
 
 from a2c_ppo_acktr.distributions import Bernoulli, Categorical, DiagGaussian
 from a2c_ppo_acktr.utils import init
@@ -196,7 +197,12 @@ class CNNBase(NNBase):
 
 
 class MLPBase(NNBase):
-    def __init__(self, num_inputs, recurrent=False, hidden_size=64):
+    def __init__(self,
+                 num_inputs,
+                 recurrent=False,
+                 # hidden_size=64,
+                 **base_kwargs):
+        hidden_size = base_kwargs['hidden_dim']
         super(MLPBase, self).__init__(recurrent, num_inputs, hidden_size)
 
         if recurrent:
@@ -205,13 +211,23 @@ class MLPBase(NNBase):
         init_ = lambda m: init(m, nn.init.orthogonal_, lambda x: nn.init.
                                constant_(x, 0), np.sqrt(2))
 
-        self.actor = nn.Sequential(
-            init_(nn.Linear(num_inputs, hidden_size)), nn.Tanh(),
-            init_(nn.Linear(hidden_size, hidden_size)), nn.Tanh())
+        # self.actor = nn.Sequential(
+        #     init_(nn.Linear(num_inputs, hidden_size)), nn.Tanh(),
+        #     init_(nn.Linear(hidden_size, hidden_size)), nn.Tanh())
+        #
+        # self.critic = nn.Sequential(
+        #     init_(nn.Linear(num_inputs, hidden_size)), nn.Tanh(),
+        #     init_(nn.Linear(hidden_size, hidden_size)), nn.Tanh())
 
-        self.critic = nn.Sequential(
-            init_(nn.Linear(num_inputs, hidden_size)), nn.Tanh(),
-            init_(nn.Linear(hidden_size, hidden_size)), nn.Tanh())
+        if base_kwargs['network_class'] == 'MLP':
+            network_class = MLP
+        elif base_kwargs['network_class'] == 'FourierMLP':
+            network_class = FourierMLP
+        del base_kwargs['network_class']
+        self.actor = network_class(num_inputs, hidden_size, **base_kwargs)
+        self.critic = network_class(num_inputs, hidden_size, **base_kwargs)
+        self.actor.apply(init_)
+        self.critic.apply(init_)
 
         self.critic_linear = init_(nn.Linear(hidden_size, 1))
 
