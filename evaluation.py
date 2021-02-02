@@ -1,17 +1,18 @@
 import torch
+import numpy as np
 from a2c_ppo_acktr import utils
 from a2c_ppo_acktr.envs import make_vec_envs
-
+from rlkit_logging import logger
 
 def evaluate(actor_critic, ob_rms, env_name, seed, num_processes, eval_log_dir,
-             device):
+             device, step):
     eval_envs = make_vec_envs(env_name, seed + num_processes, num_processes,
                               None, eval_log_dir, device, True)
 
     vec_norm = utils.get_vec_normalize(eval_envs)
     if vec_norm is not None:
         vec_norm.eval()
-        vec_norm.ob_rms = ob_rms
+        vec_norm.obs_rms = ob_rms  # changed
 
     eval_episode_rewards = []
 
@@ -44,3 +45,6 @@ def evaluate(actor_critic, ob_rms, env_name, seed, num_processes, eval_log_dir,
 
     # print(" Evaluation using {} episodes: mean reward {:.5f}\n".format(
     #     len(eval_episode_rewards), np.mean(eval_episode_rewards)))
+    logger.record_tabular('Steps', step)
+    logger.record_tabular('Eval reward', np.mean(eval_episode_rewards))
+    logger.dump_tabular(with_prefix=False, with_timestamp=True)

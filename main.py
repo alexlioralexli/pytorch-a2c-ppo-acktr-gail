@@ -190,29 +190,26 @@ def main():
 
         # save for every interval-th episode or for the last epoch
         if j % args.save_interval == 0 or j == num_updates - 1:
-            torch.save(actor_critic.state_dict(), osp.join(log_dir, f'{j}.pt'))
+            torch.save([actor_critic.state_dict(),getattr(utils.get_vec_normalize(envs), 'obs_rms', None)],
+                       osp.join(log_dir, f'{j}.pt'))
 
         if j % args.log_interval == 0 and len(episode_rewards) > 1:
             total_num_steps = (j + 1) * args.num_processes * args.num_steps
             end = time.time()
-            # print(
-            #     "Updates {}, num timesteps {}, FPS {} \n Last {} training episodes: mean/median reward {:.1f}/{:.1f}, min/max reward {:.1f}/{:.1f}\n"
-            #         .format(j, total_num_steps,
-            #                 int(total_num_steps / (end - start)),
-            #                 len(episode_rewards), np.mean(episode_rewards),
-            #                 np.median(episode_rewards), np.min(episode_rewards),
-            #                 np.max(episode_rewards), dist_entropy, value_loss,
-            #                 action_loss))
-            logger.record_tabular('Steps', total_num_steps)
-            logger.record_tabular('Time', end - start)
-            logger.record_tabular('Train reward', np.mean(episode_rewards))
-            logger.dump_tabular(with_prefix=False, with_timestamp=True)
+            print(
+                "Updates {}, num timesteps {}, FPS {} \n Last {} training episodes: mean/median reward {:.1f}/{:.1f}, min/max reward {:.1f}/{:.1f}\n"
+                    .format(j, total_num_steps,
+                            int(total_num_steps / (end - start)),
+                            len(episode_rewards), np.mean(episode_rewards),
+                            np.median(episode_rewards), np.min(episode_rewards),
+                            np.max(episode_rewards), dist_entropy, value_loss,
+                            action_loss))
+
 
         if (args.eval_interval is not None and len(episode_rewards) > 1 and j % args.eval_interval == 0):
-            raise RuntimeError  # not sure where this is being logger. regardless, vec_normalize isn't working
-            ob_rms = utils.get_vec_normalize(envs).ob_rms
+            ob_rms = utils.get_vec_normalize(envs).obs_rms
             evaluate(actor_critic, ob_rms, args.env_name, args.seed,
-                     args.num_processes, log_dir, device)
+                     args.num_processes, log_dir, device, j)
 
 
 if __name__ == "__main__":
