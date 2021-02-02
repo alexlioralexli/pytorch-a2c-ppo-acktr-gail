@@ -8,9 +8,9 @@ for env in envs:
 
     for type in ['--train_B', '--concatenate_fourier --train_B']:
         for n_hidden in [1]:
-            for fourier_dim in [128]:
-                for sigma in [0.1, 0.01]:
-                    commands.append(f'{base_command} --network_class FourierMLP --n_hidden {n_hidden} --sigma {sigma} --fourier_dim {fourier_dim}')
+            for fourier_dim in [256]:
+                for sigma in [0.1, 0.01, 0.001]:
+                    commands.append(f'{base_command} --network_class FourierMLP --n_hidden {n_hidden} --sigma {sigma} --fourier_dim {fourier_dim} {type}')
     count = 0
     for command in commands:
         # gpus = list(range(8,10))
