@@ -10,7 +10,7 @@ for env in envs:
         for n_hidden in [1]:
             for fourier_dim in [256]:
                 for sigma in [0.01, 0.001]:
-                    commands.append(f'{base_command} --network_class FourierMLP --n_hidden {n_hidden} --sigma{sigma} --fourier_dim {fourier_dim}')
+                    commands.append(f'{base_command} --network_class FourierMLP --n_hidden {n_hidden} --sigma {sigma} --fourier_dim {fourier_dim}')
     count = 0
     for command in commands:
         # gpus = list(range(8,10))
