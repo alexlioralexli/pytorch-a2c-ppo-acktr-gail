@@ -4,15 +4,23 @@ import numpy as np
 
 
 class MLP(nn.Module):
-    def __init__(self, input_size, output_size, n_hidden=1, hidden_dim=256, first_dim=0, add_tanh=False, add_relu=False):
+    def __init__(self, input_size, output_size, n_hidden=1, hidden_dim=256, first_dim=0, nonlinearity='tanh',
+                 add_tanh=False, add_relu=False):
         super().__init__()
 
+        if nonlinearity == 'relu':
+            raise NotImplementedError
+            nonlin_cls = nn.ReLU
+        elif nonlinearity == 'tanh':
+            nonlin_cls = nn.Tanh
+        else:
+            raise RuntimeError
         first_dim = max(hidden_dim, first_dim)
-        layers = [nn.Linear(input_size, first_dim), nn.ReLU()]
+        layers = [nn.Linear(input_size, first_dim), nonlin_cls()]
         for _ in range(n_hidden - 1):
             layers.append(nn.Linear(first_dim, hidden_dim))
             first_dim = hidden_dim
-            layers.append(nn.ReLU())
+            layers.append(nonlin_cls())
         layers.append(nn.Linear(first_dim, output_size))
         if add_tanh:
             layers.append(nn.Tanh())
@@ -36,6 +44,7 @@ class FourierMLP(nn.Module):
                  output_size,
                  n_hidden=1,
                  hidden_dim=256,
+                 nonlinearity='tanh',
                  sigma=1.0,
                  fourier_dim=256,
                  train_B=False,
@@ -49,6 +58,12 @@ class FourierMLP(nn.Module):
         self.sigma = sigma
         self.B = nn.Parameter(torch.normal(torch.zeros(*b_shape), torch.full(b_shape, sigma)))
         self.B.requires_grad = train_B
+        if nonlinearity == 'relu':
+            nonlin_cls = nn.ReLU
+        elif nonlinearity == 'tanh':
+            nonlin_cls = nn.Tanh
+        else:
+            raise RuntimeError
 
         self.concatenate_fourier = concatenate_fourier
         if self.concatenate_fourier:
@@ -57,10 +72,10 @@ class FourierMLP(nn.Module):
             mlp_input_dim = fourier_dim
 
         # create rest of the network
-        layers = [nn.Linear(mlp_input_dim, hidden_dim), nn.ReLU()]
+        layers = [nn.Linear(mlp_input_dim, hidden_dim), nonlin_cls()]
         for _ in range(n_hidden - 1):
             layers.append(nn.Linear(hidden_dim, hidden_dim))
-            layers.append(nn.ReLU())
+            layers.append(nonlin_cls())
         layers.append(nn.Linear(hidden_dim, output_size))
         if add_tanh:
             layers.append(nn.Tanh())

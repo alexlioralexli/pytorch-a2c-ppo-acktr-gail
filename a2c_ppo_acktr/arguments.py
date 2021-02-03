@@ -147,6 +147,7 @@ def get_args():
     parser.add_argument("--n_hidden", default=1, type=int)
     parser.add_argument("--hidden_dim", default=256, type=int)
     parser.add_argument("--first_dim", default=0, type=int)
+    parser.add_argument("--nonlinearity", default='tanh', type=str)
     parser.add_argument("--fourier_dim", default=256, type=int)
     parser.add_argument("--sigma", default=1.0, type=float)
     parser.add_argument("--concatenate_fourier", action='store_true')

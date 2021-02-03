@@ -54,7 +54,7 @@ def main():
         base_kwargs = dict(n_hidden=args.n_hidden,
                            hidden_dim=args.hidden_dim,
                            first_dim=args.first_dim,
-                           add_relu=True)
+                           nonlinearity=args.nonlinearity)
     elif args.network_class == 'FourierMLP':
         base_kwargs = dict(n_hidden=args.n_hidden,
                            hidden_dim=args.hidden_dim,
@@ -62,11 +62,13 @@ def main():
                            fourier_dim=args.fourier_dim,
                            train_B=args.train_B,
                            concatenate_fourier=args.concatenate_fourier,
-                           add_relu=True)
+                           nonlinearity=args.nonlinearity)
     else:
         raise NotImplementedError
     base_kwargs['network_class'] = args.network_class
     base_kwargs['recurrent'] = args.recurrent_policy
+    base_kwargs[f'add_{args.nonlinearity}'] = True
+
 
     actor_critic = Policy(
         envs.observation_space.shape,
