@@ -128,10 +128,10 @@ class NNBase(nn.Module):
             # Let's figure out which steps in the sequence have a zero for any agent
             # We will always assume t=0 has a zero in it as that makes the logic cleaner
             has_zeros = ((masks[1:] == 0.0) \
-                            .any(dim=-1)
-                            .nonzero()
-                            .squeeze()
-                            .cpu())
+                         .any(dim=-1)
+                         .nonzero()
+                         .squeeze()
+                         .cpu())
 
             # +1 to correct the masks[1:]
             if has_zeros.dim() == 0:
@@ -208,11 +208,10 @@ class MLPBase(NNBase):
         if recurrent:
             num_inputs = hidden_size
 
-
         def init_(m):
             if isinstance(m, nn.Linear):
                 return init(m, nn.init.orthogonal_, lambda x: nn.init.
-                     constant_(x, 0), np.sqrt(2))
+                            constant_(x, 0), np.sqrt(2))
 
         # self.actor = nn.Sequential(
         #     init_(nn.Linear(num_inputs, hidden_size)), nn.Tanh(),
@@ -227,7 +226,13 @@ class MLPBase(NNBase):
         elif base_kwargs['network_class'] == 'FourierMLP':
             network_class = FourierMLP
         del base_kwargs['network_class']
-        self.actor = network_class(num_inputs, hidden_size, **base_kwargs)
+
+        self.actor = MLP(n_hidden=base_kwargs['n_hidden'],
+                         hidden_dim=base_kwargs['hidden_dim'],
+                         first_dim=base_kwargs['first_dim'],
+                         nonlinearity=base_kwargs['nonlinearity'])
+        print('only using network class for critic, not the actor!!!!')
+        # self.actor = network_class(num_inputs, hidden_size, **base_kwargs)
         self.critic = network_class(num_inputs, hidden_size, **base_kwargs)
         self.actor.apply(init_)
         self.critic.apply(init_)
